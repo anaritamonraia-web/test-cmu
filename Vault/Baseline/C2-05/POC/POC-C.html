@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>POC C · Map Follows Reading</title>
+<style>
+  :root{--bg:#d9d9d9;--phone:#f5f5f5;--card:#fff;--ink:#1f1f1f;--ink2:#555;--ink3:#8c8c8c;--line:#d4d4d4;--accent:#2f6fde;--accent-soft:#e4ecfb}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:var(--ink);display:flex;flex-direction:column;align-items:center;padding:24px 16px}
+  button,input{font:inherit;color:inherit}
+  .note{max-width:390px;width:100%;font-size:13px;color:var(--ink2);margin:0 0 12px}
+  .note b{color:var(--ink)}
+  .phone{position:relative;width:100%;max-width:390px;height:780px;background:var(--phone);border-radius:28px;overflow:hidden;box-shadow:0 0 0 8px #bdbdbd}
+  svg.map{display:block;touch-action:none;cursor:grab;user-select:none}
+  .meta{font-size:12px;color:var(--ink2)}
+  ul,ol{margin:0;padding:0}
+  .ask{display:flex;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:0 10px}
+  .ask input{flex:1;border:0;background:none;padding:9px 0;outline:none;min-width:0}
+  .answer{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:13px;color:var(--ink2);margin-top:6px}
+  .answer:empty{display:none}
+  .phead{display:flex;align-items:center;gap:10px}
+  .avatar{width:40px;height:40px;border-radius:50%;background:#bdbdbd;flex:none;display:flex;align-items:center;justify-content:center;font-weight:600;color:#fff}
+  .avatar.mine{background:var(--accent)}
+  .phead h2{font-size:18px;margin:0}
+  .tag{display:inline-block;border-radius:6px;padding:1px 7px;font-size:11px;border:1px solid var(--line);color:var(--ink2);margin-left:6px;vertical-align:2px}
+  .sec h3{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);margin:16px 0 4px}
+  .upd{list-style:none;padding:9px 0;border-bottom:1px solid #eee;font-size:14px}
+  .upd:last-child{border-bottom:0}
+  .upd.review{background:var(--accent-soft);border-radius:10px;padding:10px;border:0;margin-bottom:6px}
+  .cmp{display:flex;gap:8px;margin:8px 0}
+  .cmp div{flex:1;height:64px;background:#d3d3d3;border-radius:8px;font-size:11px;padding:5px;display:flex;align-items:flex-end;color:var(--ink2)}
+  .row{display:flex;gap:8px;margin-top:8px}
+  .btn{flex:1;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:9px;font-size:14px;cursor:pointer}
+  .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .link{border:0;background:none;color:var(--accent);padding:0;cursor:pointer;font-size:13px}
+  .fallback{background:#f1f1f1;border-left:3px solid var(--ink3);padding:8px 10px;font-size:13px;color:var(--ink2);border-radius:6px}
+  .sec p{margin:4px 0;font-size:14px}
+  .tl li{list-style:none;display:flex;gap:10px;padding:6px 0;font-size:14px}
+  .tl .when{width:80px;flex:none;color:var(--ink2);font-size:12px;padding-top:2px}
+  .flabel{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);margin:12px 0 2px}
+  .opt{display:flex;gap:10px;align-items:center;padding:7px 0;font-size:14px;cursor:pointer}
+  .opt.sub{padding-left:26px}
+  .opt input{width:18px;height:18px;accent-color:var(--accent)}
+  .opt.off{color:var(--ink3)}
+  .nitem{display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid #eee;padding:10px 0 10px 16px;cursor:pointer;position:relative}
+  .nitem b{display:block;font-weight:500;font-size:14px}
+  .nitem.unread b{font-weight:700}
+  .nitem.unread:before{content:"";position:absolute;left:2px;top:16px;width:7px;height:7px;border-radius:50%;background:var(--accent)}
+  .badge{position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;border-radius:9px;background:var(--accent);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px}
+  .badge:empty{display:none}
+
+  .phone{display:flex;flex-direction:column}
+  .mapbox{position:relative;height:330px;flex:none;border-bottom:1px solid var(--line)}
+  .mapbox svg.map{width:100%;height:100%}
+  .rail{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:5px}
+  .rail button{position:relative;width:44px;height:46px;border:0;background:none;border-radius:10px;cursor:pointer;font-size:10px;color:var(--ink2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+  .rail .ic{width:16px;height:16px;border:2px solid currentColor;border-radius:5px}
+  .rail button.on{background:var(--accent-soft);color:var(--accent)}
+  .maplabel{position:absolute;left:10px;bottom:10px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:5px 10px;font-size:12px;color:var(--ink2)}
+  .maplabel b{color:var(--accent);font-weight:600}
+  .page{flex:1;overflow:auto;padding:12px 16px 40px;position:relative}
+  .back{border:0;background:none;color:var(--accent);padding:0 0 8px;cursor:pointer;font-size:14px}
+  .page h2.t{font-size:17px;margin:0 0 6px}
+  .steps{position:sticky;top:-12px;z-index:2;background:var(--phone);display:flex;gap:6px;padding:8px 0;margin:8px 0 0}
+  .steps button{flex:1;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:5px 4px;font-size:12px;color:var(--ink2);cursor:pointer}
+  .steps button.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+  .page .sec{min-height:230px;padding-bottom:8px}
+  .page .sec:last-child{min-height:340px}
+  .prow{display:flex;gap:10px;align-items:center;width:100%;border:0;border-bottom:1px solid #eee;background:none;padding:10px 0;cursor:pointer;text-align:left}
+  .prow .avatar{width:34px;height:34px;font-size:13px}
+  .prow .dot{margin-left:auto;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+</style>
+</head>
+<body>
+<p class="note"><b>POC C · Map follows your reading.</b> The map stays fixed at the top and the content scrolls below it. In a profile, the map follows the section you're reading: Updates shows where each update happened, Predicted location zooms to the area, and Timeline draws the path.</p>
+
+<div class="phone">
+  <div class="mapbox">
+    <svg class="map" id="map" viewBox="-195 60 780 640" preserveAspectRatio="xMidYMid slice">
+      <rect x="-600" y="-600" width="1590" height="1980" fill="#e3e3e3"/>
+      <g fill="#ececec">
+        <rect x="20" y="150" width="115" height="100" rx="6"/><rect x="155" y="150" width="100" height="100" rx="6"/>
+        <rect x="275" y="40" width="105" height="210" rx="6"/><rect x="20" y="20" width="115" height="120" rx="6"/>
+        <rect x="275" y="270" width="105" height="240" rx="6"/><rect x="20" y="270" width="115" height="240" rx="6"/>
+        <rect x="20" y="540" width="115" height="100" rx="6"/><rect x="155" y="540" width="100" height="100" rx="6"/>
+        <rect x="275" y="540" width="105" height="100" rx="6"/><rect x="20" y="665" width="360" height="110" rx="6"/>
+      </g>
+      <rect x="155" y="345" width="100" height="160" rx="12" fill="#d6d6d6"/>
+      <text x="205" y="495" font-size="10" fill="#8c8c8c" text-anchor="middle">Jardim da Estrela</text>
+      <text x="215" y="290" font-size="10" fill="#8c8c8c" text-anchor="middle">Escola Básica</text>
+      <g stroke="#fff" stroke-width="12" fill="none">
+        <path d="M-600 260 H990"/><path d="M-600 525 H990"/><path d="M-600 652 H990"/>
+        <path d="M145 -600 V1380"/><path d="M265 -600 V1380"/><path d="M-600 145 H990"/>
+      </g>
+      <text x="300" y="256" font-size="9" fill="#8c8c8c">Rua das Flores</text>
+      <text x="30" y="521" font-size="9" fill="#8c8c8c">Rua do Sol</text>
+      <text x="300" y="141" font-size="9" fill="#8c8c8c">Rua Saraiva</text>
+
+      <g id="overlay"></g><g id="pins"></g>
+    </svg>
+    <nav class="rail" aria-label="Map tools">
+      <button id="bFilters" aria-label="Filters"><span class="ic"></span>Filters</button>
+      <button id="bNotifs" aria-label="Notifications"><span class="ic" style="border-radius:50% 50% 4px 4px"></span>Notifs<span class="badge" id="badge"></span></button>
+      <button id="bProfile" aria-label="My pet's profile"><span class="ic" style="border-radius:50%"></span>Profile</button>
+    </nav>
+    <div class="maplabel" id="maplabel">Whole area</div>
+  </div>
+  <div class="page" id="page" aria-live="polite"></div>
+</div>
+
+<script>
+// ---------- shared data (same in all three POCs) ----------
+const NS="http://www.w3.org/2000/svg", $=id=>document.getElementById(id);
+const mk=(t,a,txt)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;return e};
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+const PETS=[
+ {id:"luna",name:"Luna",type:"dog",kind:"Dog",mine:true,status:"Missing for 2 days",x:205,y:400,
+  updates:[
+   {text:"Possible match: a found dog photographed near Escola Básica",meta:"Photo match 82% · 1 h ago · waiting for your review",review:true,x:262,y:300},
+   {text:"Joana shared Luna's link in a neighbourhood group",meta:"3 h ago · 140 people reached"},
+   {text:"Seen near the bakery on Rua das Flores",meta:"Helper Ana · confirmed by 3 people · 1 day ago",x:150,y:500}],
+  predict:{x:215,y:400,r:75,conf:"medium",text:"Most likely around Jardim da Estrela, within about 600 m of the last confirmed sighting."},
+  timeline:[{t:"18 h ago",text:"Seen in Jardim da Estrela",x:205,y:400},{t:"1 day ago",text:"Seen near the bakery, Rua das Flores",x:150,y:500},{t:"2 days ago",text:"Went missing from home, Rua do Sol",x:90,y:600}]},
+ {id:"max",name:"Max",type:"dog",kind:"Dog",status:"Missing for 5 days",x:90,y:215,
+  updates:[{text:"Max's owner added a new photo",meta:"2 days ago"}],
+  predict:{x:90,y:215,r:110,conf:"low",text:"Max was last seen 4 days ago near Rua Saraiva and nobody has reported a sighting since. A prediction will appear here as soon as someone does."},
+  timeline:[{t:"4 days ago",text:"Last seen near Rua Saraiva",x:90,y:215},{t:"5 days ago",text:"Went missing from home",x:60,y:320}]},
+ {id:"mia",name:"Mia",type:"cat",kind:"Cat",found:true,status:"Found · safe at Patas NGO",x:300,y:590,
+  updates:[{text:"Found by Rui near Escola Básica and taken to Patas NGO",meta:"40 min ago · Patas will check the owner's identity",x:240,y:300}],
+  predict:{conf:"none",text:"No prediction needed: Mia is safe at Patas NGO. If Mia is yours, contact Patas to arrange the pick-up."},
+  timeline:[{t:"20 min ago",text:"Arrived at Patas NGO",x:335,y:600},{t:"40 min ago",text:"Found near Escola Básica",x:240,y:300}]},
+ {id:"tico",name:"Tico",type:"cat",kind:"Cat",status:"Missing for 1 day",x:215,y:195,
+  updates:[{text:"Possibly seen on a balcony on Rua Saraiva",meta:"Helper report · not confirmed yet · 5 h ago",x:200,y:120}],
+  predict:{x:212,y:180,r:55,conf:"medium",text:"Most likely within 300 m of home: indoor cats usually stay close."},
+  timeline:[{t:"1 day ago",text:"Went missing from home",x:215,y:195}]},
+ {id:"bolt",name:"Bolt",type:"other",kind:"Rabbit",status:"Missing for 3 days",x:70,y:590,
+  updates:[{text:"Bolt's owner put up posters around the market",meta:"1 day ago"}],
+  predict:{x:70,y:590,r:50,conf:"medium",text:"Most likely hiding in gardens near the market: rabbits rarely travel far."},
+  timeline:[{t:"3 days ago",text:"Escaped from a garden near the market",x:70,y:590}]}
+];
+const SERV=[
+ {k:"shop",name:"Pet shop Bicho",x:60,y:95},{k:"shop",name:"Pet shop Patinhas",x:345,y:440},
+ {k:"vet",name:"Vet Estrela · open now",x:345,y:330},{k:"vet",name:"24 h vet",x:190,y:600},
+ {k:"ngo",name:"Patas NGO",x:340,y:615}];
+const F={shop:true,vet:true,ngo:true,animals:true,types:{dog:true,cat:true,other:true}};
+const NOTIFS=[
+ {id:1,text:"New close match for Luna",meta:"82% photo match · 1 h ago",pet:"luna",read:false},
+ {id:2,text:"New person shared Luna's link",meta:"Joana · 3 h ago",pet:"luna",read:false},
+ {id:3,text:"Pet found close to you",meta:"Mia, a cat · 300 m away · 40 min ago",pet:"mia",read:false}];
+const pet=id=>PETS.find(p=>p.id===id);
+const unread=()=>NOTIFS.filter(n=>!n.read).length;
+const unreadFor=id=>NOTIFS.filter(n=>!n.read&&n.pet===id).length;
+const visibleCount=()=>SERV.filter(s=>F[s.k]).length+(F.animals?PETS.filter(p=>F.types[p.type]).length:0);
+
+// ---------- map drawing ----------
+function drawPins(g,openId,onPin,opts={}){
+  g.innerHTML="";
+  SERV.forEach(s=>{if(!F[s.k])return;const t=mk("g",{});
+    t.append(mk("rect",{x:s.x-9,y:s.y-9,width:18,height:18,rx:4,fill:"#fff",stroke:"#9a9a9a"}),
+             mk("text",{x:s.x,y:s.y+4,"text-anchor":"middle","font-size":10,fill:"#555"},{shop:"S",vet:"V",ngo:"N"}[s.k]),mk("title",{},s.name));
+    g.append(t)});
+  if(!F.animals)return;
+  PETS.forEach(p=>{if(!F.types[p.type])return;const on=p.id===openId;
+    const t=mk("g",{class:"pin",tabindex:0,role:"button","aria-label":p.name+", "+p.status,style:"cursor:pointer"});
+    t.append(mk("circle",{cx:p.x,cy:p.y,r:on?16:13,fill:p.mine?"#2f6fde":p.found?"#fff":"#3a3a3a",stroke:on?"#2f6fde":(p.found?"#3a3a3a":"#fff"),"stroke-width":on?3:2}));
+    t.append(mk("text",{x:p.x,y:p.y+4,"text-anchor":"middle","font-size":11,"font-weight":700,fill:p.found?"#3a3a3a":"#fff"},p.name[0]));
+    t.append(mk("text",{x:p.x,y:p.y+28,"text-anchor":"middle","font-size":10,fill:"#444"},p.name+(p.found?" · found":"")));
+    if(opts.dots&&unreadFor(p.id)){t.append(mk("circle",{cx:p.x+12,cy:p.y-11,r:7,fill:"#2f6fde",stroke:"#fff","stroke-width":2}));
+      t.append(mk("text",{x:p.x+12,y:p.y-8,"text-anchor":"middle","font-size":8,"font-weight":700,fill:"#fff"},unreadFor(p.id)))}
+    t.addEventListener("click",e=>{e.stopPropagation();onPin(p.id)});
+    t.addEventListener("keydown",e=>{if(e.key==="Enter")onPin(p.id)});
+    g.append(t)});
+}
+// what an open profile adds to the map: predicted area, timeline path, update points
+function drawOverlay(g,p,o={}){
+  g.innerHTML="";if(!p)return;const show={predict:true,timeline:true,updates:false,labels:false,...o};
+  const pr=p.predict;
+  if(show.predict&&pr.x!=null){const low=pr.conf==="low";
+    g.append(mk("circle",{cx:pr.x,cy:pr.y,r:pr.r,fill:low?"#8c8c8c":"#2f6fde","fill-opacity":low?.07:.1,stroke:low?"#8c8c8c":"#2f6fde","stroke-dasharray":"4 4"}));
+    g.append(mk("text",{x:pr.x,y:pr.y-pr.r-6,"text-anchor":"middle","font-size":10,fill:low?"#666":"#2f6fde"},low?"Not enough sightings to predict":"Predicted area · "+pr.conf+" confidence"))}
+  const tl=p.timeline.filter(e=>e.x!=null);
+  if(show.timeline){
+    if(tl.length>1)g.append(mk("polyline",{points:tl.map(e=>e.x+","+e.y).join(" "),fill:"none",stroke:"#2f6fde","stroke-width":3,"stroke-dasharray":"6 5","stroke-opacity":.7}));
+    tl.forEach((e,i)=>{g.append(mk("circle",{cx:e.x,cy:e.y,r:5,fill:"#fff",stroke:"#2f6fde","stroke-width":2,"stroke-opacity":Math.max(.35,1-i*.25)}));
+      if(show.labels)g.append(mk("text",{x:e.x+9,y:e.y-6,"font-size":10,fill:"#2f6fde"},e.t))})}
+  if(show.updates)p.updates.filter(u=>u.x!=null).forEach(u=>{
+    g.append(mk("circle",{cx:u.x,cy:u.y,r:9,fill:u.review?"#fff":"#2f6fde",stroke:"#2f6fde","stroke-width":2,"stroke-dasharray":u.review?"3 2":""}));
+    if(show.labels)g.append(mk("text",{x:u.x+13,y:u.y+4,"font-size":10,fill:"#2f6fde"},u.review?"To review":u.meta.split(" · ").pop()))});
+}
+function bbox(p,mode){
+  let pts=[];const pr=p.predict;
+  if(mode==="predict"&&pr.x!=null)pts=[[pr.x-pr.r,pr.y-pr.r],[pr.x+pr.r,pr.y+pr.r]];
+  else if(mode==="updates")pts=p.updates.filter(u=>u.x!=null).map(u=>[u.x,u.y]);
+  else if(mode==="timeline")pts=p.timeline.filter(e=>e.x!=null).map(e=>[e.x,e.y]);
+  pts.push([p.x,p.y]);
+  const xs=pts.map(a=>a[0]),ys=pts.map(a=>a[1]);
+  return [Math.min(...xs),Math.min(...ys),Math.max(...xs),Math.max(...ys)];
+}
+// calm, user-started camera move
+function animateVB(svg,to,ms=450){
+  const from=svg.getAttribute("viewBox").split(" ").map(Number),t0=performance.now();
+  const step=n=>{const k=Math.min(1,(n-t0)/ms),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+    svg.setAttribute("viewBox",from.map((f,i)=>f+(to[i]-f)*e).join(" "));if(k<1)requestAnimationFrame(step)};
+  requestAnimationFrame(step);
+}
+function enablePan(svg){
+  let d=null;
+  svg.addEventListener("pointerdown",e=>{if(e.target.closest(".pin"))return;
+    const vb=svg.getAttribute("viewBox").split(" ").map(Number);
+    d={x:e.clientX,y:e.clientY,vb,s:Math.max(svg.clientWidth/vb[2],svg.clientHeight/vb[3])};
+    svg.setPointerCapture(e.pointerId);svg.style.cursor="grabbing"});
+  svg.addEventListener("pointermove",e=>{if(!d)return;const v=d.vb.slice();
+    v[0]=clamp(d.vb[0]-(e.clientX-d.x)/d.s,-250,640-v[2]);v[1]=clamp(d.vb[1]-(e.clientY-d.y)/d.s,-250,1030-v[3]);
+    svg.setAttribute("viewBox",v.join(" "))});
+  const end=()=>{d=null;svg.style.cursor=""};
+  svg.addEventListener("pointerup",end);svg.addEventListener("pointercancel",end);
+}
+
+// ---------- panels' content (same breadboard in all three POCs) ----------
+function profileHead(p){
+  return `<div class="phead"><div class="avatar ${p.mine?"mine":""}">${p.name[0]}</div><div><h2>${p.name}${p.mine?'<span class="tag">Your pet</span>':""}</h2><div class="meta">${p.kind} · ${p.status}</div></div></div>`;
+}
+function updatesHTML(p){
+  return `<ul>${p.updates.map((u,i)=>u.review?
+   `<li class="upd review"><b>${u.text}</b><div class="meta">${u.meta}</div><div class="cmp"><div>${p.name}</div><div>Found dog</div></div><div class="row"><button class="btn primary" data-rv="yes" data-i="${i}">It's ${p.name}</button><button class="btn" data-rv="no" data-i="${i}">Not ${p.name}</button></div></li>`:
+   `<li class="upd">${u.text}<div class="meta">${u.meta}${u.undo?` · <button class="link" data-undo>Undo</button>`:""}</div></li>`).join("")}</ul>`;
+}
+function predictHTML(p){
+  const pr=p.predict;
+  if(pr.conf==="none")return `<p>${pr.text}</p>`;
+  if(pr.conf==="low")return `<div class="fallback"><b>We can't predict where ${p.name} is yet.</b> ${pr.text}</div>`;
+  return `<p>${pr.text}</p><div class="meta">${pr.conf[0].toUpperCase()+pr.conf.slice(1)} confidence · based on ${p.timeline.filter(e=>e.x!=null).length} confirmed sighting${p.timeline.length>1?"s":""}</div>`;
+}
+function timelineHTML(p){
+  return `<ol class="tl">${p.timeline.map(e=>`<li><span class="when">${e.t}</span><span>${e.text}</span></li>`).join("")}</ol>`;
+}
+// fixed order: updates, predicted location, timeline
+function profileHTML(p){
+  return `${profileHead(p)}
+  <section class="sec" data-sec="updates"><h3>Updates on ${p.name}</h3>${updatesHTML(p)}</section>
+  <section class="sec" data-sec="predict"><h3>Predicted location</h3>${predictHTML(p)}</section>
+  <section class="sec" data-sec="timeline"><h3>Timeline</h3>${timelineHTML(p)}</section>`;
+}
+// review = AI proposes, owner decides; applied at once, undo in place
+function bindProfile(root,p,rerender){
+  root.querySelectorAll("[data-rv]").forEach(b=>b.onclick=()=>{
+    const snap=JSON.stringify(p),i=+b.dataset.i;
+    if(b.dataset.rv==="yes"){
+      p.updates[i]={text:`You confirmed the dog near Escola Básica is ${p.name}`,meta:"Just now · added to the timeline",undo:true,x:262,y:300};
+      p.timeline.unshift({t:"1 h ago",text:"Photographed near Escola Básica",x:262,y:300});
+      p.predict={x:262,y:300,r:55,conf:"high",text:"Most likely around Escola Básica, within about 400 m of the newest sighting."};
+      p.x=262;p.y=300;
+    } else p.updates[i]={text:"You marked the photo near Escola Básica as not "+p.name,meta:"Just now · removed from the search",undo:true};
+    p._snap=snap;rerender();
+  });
+  root.querySelectorAll("[data-undo]").forEach(b=>b.onclick=()=>{if(p._snap){Object.assign(p,JSON.parse(p._snap));rerender()}});
+}
+function filtersHTML(){
+  const c=(k,l)=>`<label class="opt"><input type="checkbox" data-f="${k}" ${F[k]?"checked":""}> ${l}</label>`;
+  const t=(k,l)=>`<label class="opt sub ${F.animals?"":"off"}"><input type="checkbox" data-t="${k}" ${F.types[k]?"checked":""} ${F.animals?"":"disabled"}> ${l}</label>`;
+  return `<div class="flabel">Places</div>${c("shop","Pet shops")}${c("vet","Vets")}${c("ngo","NGOs")}
+  <div class="flabel">Animals</div>${c("animals","Lost and found animals")}
+  <div class="flabel">Pet types</div>${t("dog","Dogs")}${t("cat","Cats")}${t("other","Other animals")}
+  <p class="meta" data-count>Showing ${visibleCount()} on the map</p>`;
+}
+// live: every tick updates the map at once, no Apply button
+function bindFilters(root,rerender){
+  root.querySelectorAll("input").forEach(i=>i.onchange=()=>{
+    if(i.dataset.f)F[i.dataset.f]=i.checked;else F.types[i.dataset.t]=i.checked;
+    root.querySelectorAll("[data-t]").forEach(x=>{x.disabled=!F.animals;x.parentNode.classList.toggle("off",!F.animals)});
+    root.querySelector("[data-count]").textContent=`Showing ${visibleCount()} on the map`;
+    rerender();
+  });
+}
+function notifsHTML(){
+  return `<ul>${NOTIFS.map(n=>`<li style="list-style:none"><button class="nitem ${n.read?"":"unread"}" data-n="${n.id}"><b>${n.text}</b><span class="meta">${n.meta}</span></button></li>`).join("")}</ul>`;
+}
+function bindNotifs(root,openPet){
+  root.querySelectorAll("[data-n]").forEach(b=>b.onclick=()=>{const n=NOTIFS.find(x=>x.id==b.dataset.n);n.read=true;openPet(n.pet)});
+}
+// minority conversational input: a short question, answered by pointing to the map
+function ask(q){
+  q=q.toLowerCase();
+  const p=PETS.find(x=>q.includes(x.name.toLowerCase()));
+  if(p)return {pet:p.id,text:`${p.name}: ${p.status.toLowerCase()}. Showing the profile.`};
+  if(/vet/.test(q))return {text:"Vet Estrela is open now, on the right of the map (V)."};
+  if(/shelter|ngo/.test(q))return {text:"Patas NGO is at the bottom right of the map (N)."};
+  const l=pet("luna");return {pet:"luna",text:`Luna: ${l.predict.text} Showing the profile.`};
+}
+
+const svg=$("map"),HOME=[-195,60,780,640];let mode="list",openId=null,sec="updates",obs=null;
+enablePan(svg);
+const SECNAME={updates:"Updates",predict:"Predicted location",timeline:"Timeline"};
+function rerender(){
+  drawPins($("pins"),openId,openProfile);
+  drawOverlay($("overlay"),openId&&pet(openId),{predict:sec==="predict",timeline:sec==="timeline",updates:sec==="updates",labels:true});
+  $("badge").textContent=unread()||"";
+  $("bFilters").classList.toggle("on",mode==="filters");$("bNotifs").classList.toggle("on",mode==="notifs");$("bProfile").classList.toggle("on",openId==="luna");
+  $("maplabel").innerHTML=openId?`${pet(openId).name} · <b>${SECNAME[sec]}</b>`:mode==="filters"?`Showing ${visibleCount()} on the map`:"Whole area";
+}
+const back=`<button class="back" id="back">‹ Back to everything on the map</button>`;
+function list(){
+  if(obs)obs.disconnect();mode="list";openId=null;animateVB(svg,HOME);
+  const pets=F.animals?PETS.filter(p=>F.types[p.type]):[];
+  $("page").innerHTML=`<form class="ask" id="askForm"><input id="ask" placeholder="Ask about a pet or a place…" aria-label="Ask about a pet or a place"></form><div class="answer" id="answer"></div><h2 class="t" style="margin-top:14px">On the map now</h2>${pets.map(p=>`<button class="prow" data-p="${p.id}"><span class="avatar ${p.mine?"mine":""}">${p.name[0]}</span><span><b>${p.name}</b>${p.mine?'<span class="tag">Your pet</span>':""}<br><span class="meta">${p.kind} · ${p.status}</span></span>${unreadFor(p.id)?'<span class="dot" aria-label="New updates"></span>':""}</button>`).join("")||'<p class="meta">No animals shown. Turn them on in Filters.</p>'}
+  <p class="meta">${SERV.filter(s=>F[s.k]).length} places shown: pet shops, vets and NGOs, as squares on the map.</p>`;
+  $("page").querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>openProfile(b.dataset.p));
+  $("askForm").onsubmit=e=>{e.preventDefault();const a=ask($("ask").value);$("answer").textContent=a.text;if(a.pet)setTimeout(()=>openProfile(a.pet),900)};
+  $("page").scrollTop=0;rerender();
+}
+function filters(){
+  if(mode==="filters")return list();
+  if(obs)obs.disconnect();mode="filters";openId=null;
+  $("page").innerHTML=back+`<h2 class="t">Filters</h2>`+filtersHTML();
+  bindFilters($("page"),rerender);$("back").onclick=list;rerender();
+}
+function notifs(){
+  if(mode==="notifs")return list();
+  if(obs)obs.disconnect();mode="notifs";openId=null;
+  $("page").innerHTML=back+`<h2 class="t">Notifications</h2>`+notifsHTML();
+  bindNotifs($("page"),openProfile);$("back").onclick=list;rerender();
+}
+function frame(p){
+  const [x1,y1,x2,y2]=bbox(p,sec),s=clamp(Math.min(390/(x2-x1+90),330/(y2-y1+90)),.6,2);
+  const cx=(x1+x2)/2,cy=(y1+y2)/2;animateVB(svg,[cx-195/s,cy-165/s,390/s,330/s]);
+}
+function openProfile(id,keep){
+  if(obs)obs.disconnect();
+  const p=pet(id),same=openId===id&&keep;mode="profile";openId=id;if(!same)sec="updates";
+  NOTIFS.forEach(n=>{if(n.pet===id)n.read=true});
+  const top=$("page").scrollTop;
+  $("page").innerHTML=back+profileHTML(p).replace(/<section class="sec" data-sec="updates">/,
+    `<div class="steps">${Object.keys(SECNAME).map(k=>`<button data-go="${k}" class="${k===sec?"on":""}">${SECNAME[k]}</button>`).join("")}</div>$&`);
+  bindProfile($("page"),p,()=>openProfile(id,true));$("back").onclick=list;
+  $("page").querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>$("page").querySelector(`[data-sec="${b.dataset.go}"]`).scrollIntoView({behavior:"smooth",block:"start"}));
+  $("page").scrollTop=same?top:0;
+  // the section being read decides what the map shows
+  obs=new IntersectionObserver(es=>{
+    const vis=es.filter(e=>e.isIntersecting).sort((a,b)=>a.boundingClientRect.top-b.boundingClientRect.top)[0];
+    if(!vis)return;const k=vis.target.dataset.sec;if(k===sec)return;sec=k;
+    $("page").querySelectorAll("[data-go]").forEach(b=>b.classList.toggle("on",b.dataset.go===k));
+    frame(p);rerender();
+  },{root:$("page"),rootMargin:"0px 0px -65% 0px"});
+  $("page").querySelectorAll("[data-sec]").forEach(s=>obs.observe(s));
+  frame(p);rerender();
+}
+$("bFilters").onclick=filters;$("bNotifs").onclick=notifs;$("bProfile").onclick=()=>openProfile("luna");
+list();
+</script>
+</body>
+</html>
