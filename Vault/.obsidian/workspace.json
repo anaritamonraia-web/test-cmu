@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Baseline/C2-05/BehaviourSpectrum.md",
+                "file": "Handoff/Handoff prompt.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "BehaviourSpectrum"
+              "title": "Handoff prompt"
             }
           }
         ]
@@ -190,24 +190,41 @@
   },
   "active": "883c9269ce687e84",
   "lastOpenFiles": [
-    "Baseline/C2-05/POC/POC-B-v2.html",
-    "Baseline/C2-05/CompetitiveAnalysis.md",
-    "Baseline/C2-05/POC/POC-C.html",
-    "Baseline/C2-05/POC/POC-B.html",
-    "Baseline/C2-05/POC prompt.md",
+    "Research/README.md",
+    "Meetings/CLAUDE.md",
+    "Context/SETUP.md",
+    "Design/C2-06/Skill writing guide.md",
+    "Design/C2-06/Skill prompt.md",
+    "Design/C2-06/DesignReference.md",
+    "Design/C2-06",
+    "Skills/Subagents/uxai-auditor.md",
+    "Skills/Subagents/ia-auditor.md",
+    "Skills/Subagents/ds-linter.md",
+    "Skills/Subagents",
+    "Design/Baseline/ProductRequirementsSpec.md",
+    "Design/Baseline/InformationArchSpec.md",
+    "Design/Baseline/DesignSystemTokens.md",
+    "Design/Baseline/C2-05/POC/POC-C.html",
+    "Design/Baseline/C2-05/POC/POC-B.html",
+    "Design/Baseline/C2-05/POC/POC-B-v2.html",
+    "Design/Baseline/C2-05/POC/POC-A.html",
+    "Design/Baseline/C2-05/StructureIdea.md",
+    "Design/Baseline/C2-05/POC prompt.md",
+    "Design/Baseline/C2-05/POC",
+    "Design/Baseline/C2-05/IMG_6789.heic",
+    "Design/Baseline/C2-05/CompetitiveAnalysis.md",
+    "Design/Baseline/C2-05/BehaviourSpectrum.md",
+    "Design/Baseline/C2-05/Attach photo of hand sketch here.md",
+    "Design/Baseline/C2-05/AestheticsEmotionalSpec.md",
+    "Design/Baseline/C2-05",
+    "C2-06/Skill writing guide.md",
+    "C2-06/Skill prompt.md",
+    "C2-06/DesignReference.md",
+    "C2-06",
+    "Subagents/uxai-auditor.md",
+    "Subagents/ia-auditor.md",
+    "Subagents/ds-linter.md",
     "Baseline/C2-05/StructureIdea.md",
-    "Baseline/C2-05/BehaviourSpectrum.md",
-    "Baseline/C2-05/AestheticsEmotionalSpec.md",
-    "Baseline/C2-05/POC/POC-A.html",
-    "Baseline/C2-05/POC",
-    "Attach photo of hand sketch here.md",
-    "IMG_6789.heic",
-    "Skills/ui-design.md",
-    "SETUP.md",
-    "Baseline/C2-05/ueIbBoEC",
-    "Baseline/C2-05/UXAudit.md",
-    "WswVSo2L",
-    "cVeh5xYh",
-    "Baseline/C2-05/7kTLhxoV"
+    "Baseline/C2-05/POC prompt.md"
   ]
 }
